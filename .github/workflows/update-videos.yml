@@ -3,7 +3,7 @@ name: Update Video List
 on:
   push:
     paths:
-      - '*.mp4'
+      - 'videos/*.mp4'
 
 jobs:
   build:
@@ -17,7 +17,7 @@ jobs:
         run: |
           echo '{ "videos": [' > videos.json
           first=true
-          for f in *.mp4; do
+          for f in videos/*.mp4; do
             if [ "$first" = true ]; then
               echo "\"$f\"" >> videos.json
               first=false
