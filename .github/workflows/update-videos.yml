@@ -5,6 +5,9 @@ on:
     paths:
       - 'videos/*.mp4'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
