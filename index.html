@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>TV Video Player</title>
+<title>TV Player</title>
 
 <style>
 body {
@@ -22,7 +22,7 @@ video {
 
 <body>
 
-<video id="player" autoplay playsinline></video>
+<video id="player" playsinline></video>
 
 <script>
 
@@ -31,18 +31,28 @@ let i = 0;
 
 const player = document.getElementById("player");
 
-/* Carrega playlist */
-fetch("videos.json")
-.then(r => r.json())
-.then(data => {
-    videos = data.videos;
-    playVideo();
-})
-.catch(err => {
-    console.error("Erro ao carregar videos.json:", err);
-});
+/* =========================
+   FULLSCREEN
+========================= */
+function requestFullscreen() {
+    const el = document.documentElement;
 
-/* Reproduz vídeo atual */
+    try {
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    } catch (e) {}
+}
+
+/* =========================
+   ÁUDIO (liberação por interação)
+========================= */
+function enableAudio() {
+    player.muted = false;
+}
+
+/* =========================
+   PLAYBACK
+========================= */
 function playVideo() {
 
     if (!videos.length) return;
@@ -50,12 +60,37 @@ function playVideo() {
     player.src = videos[i];
     player.load();
 
-    player.play().catch(err => {
-        console.log("Erro autoplay:", err);
-    });
+    attemptPlay();
 }
 
-/* Troca mais confiável que ended (TV-safe) */
+/* Autoplay com múltiplas tentativas */
+function attemptPlay() {
+    const p = player.play();
+
+    if (p !== undefined) {
+        p.catch(() => {
+            // tenta novamente após pequena espera
+            setTimeout(() => {
+                player.play().catch(() => {});
+            }, 500);
+        });
+    }
+}
+
+/* =========================
+   CARREGAMENTO DA PLAYLIST
+========================= */
+fetch("videos.json")
+.then(r => r.json())
+.then(data => {
+    videos = data.videos;
+    playVideo();
+})
+.catch(err => console.error("Erro JSON:", err));
+
+/* =========================
+   TROCA DE VÍDEO (robusto para TV)
+========================= */
 player.addEventListener("timeupdate", () => {
 
     if (!player.duration) return;
@@ -71,6 +106,47 @@ player.addEventListener("timeupdate", () => {
         playVideo();
     }
 });
+
+/* =========================
+   MODO KIOSK (interação do usuário)
+========================= */
+function activateKioskMode() {
+    requestFullscreen();
+    enableAudio();
+    player.play().catch(() => {});
+}
+
+/* Interação do controle remoto / clique */
+document.addEventListener("keydown", activateKioskMode);
+document.addEventListener("click", activateKioskMode);
+
+/* =========================
+   AUTOPLAY INICIAL (tentativas)
+========================= */
+window.addEventListener("load", () => {
+
+    requestFullscreen();
+
+    // primeira tentativa
+    setTimeout(() => {
+        player.play().catch(() => {});
+
+        // segunda tentativa (fallback)
+        setTimeout(() => {
+            player.play().catch(() => {});
+        }, 1000);
+
+    }, 500);
+});
+
+/* =========================
+   FALLBACK: se travar, reinicia fluxo
+========================= */
+setInterval(() => {
+    if (player.readyState === 0) {
+        playVideo();
+    }
+}, 5000);
 
 </script>
 
