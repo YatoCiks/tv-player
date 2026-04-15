@@ -1,0 +1,36 @@
+name: Update Video List
+
+on:
+  push:
+    paths:
+      - '*.mp4'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Generate videos.json
+        run: |
+          echo '{ "videos": [' > videos.json
+          first=true
+          for f in *.mp4; do
+            if [ "$first" = true ]; then
+              echo "\"$f\"" >> videos.json
+              first=false
+            else
+              echo ",\"$f\"" >> videos.json
+            fi
+          done
+          echo '] }' >> videos.json
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add videos.json
+          git commit -m "Update video list" || exit 0
+          git push
