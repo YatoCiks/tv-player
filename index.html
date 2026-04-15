@@ -31,35 +31,53 @@ let i = 0;
 
 const player = document.getElementById("player");
 
-/* Carrega lista automaticamente do JSON */
+/* Carrega lista de vídeos */
 fetch("videos.json")
-.then(response => response.json())
+.then(r => r.json())
 .then(data => {
     videos = data.videos;
-    playNext();
+    playVideo();
 })
 .catch(err => {
     console.error("Erro ao carregar videos.json:", err);
 });
 
-/* Função de reprodução sequencial */
-function playNext() {
+/* Reproduz vídeo atual */
+function playVideo() {
+    if (!videos.length) return;
 
-  if (!videos.length) return;
+    player.src = videos[i];
+    player.load();
 
-  player.src = videos[i];
-  player.load();
-  player.play();
-
-  i++;
-
-  if (i >= videos.length) {
-    i = 0;
-  }
+    const playPromise = player.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(err => {
+            console.log("Autoplay bloqueado ou erro:", err);
+        });
+    }
 }
 
-/* Quando o vídeo termina, vai para o próximo */
-player.onended = playNext;
+/* Avança corretamente ao fim do vídeo */
+player.addEventListener("ended", () => {
+    i++;
+
+    if (i >= videos.length) {
+        i = 0;
+    }
+
+    playVideo();
+});
+
+/* Libera áudio após qualquer interação (controle remoto/clique/toque) */
+document.addEventListener("click", () => {
+    player.muted = false;
+    player.play();
+});
+
+document.addEventListener("keydown", () => {
+    player.muted = false;
+    player.play();
+});
 
 </script>
 
