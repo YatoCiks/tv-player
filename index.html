@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Player TV</title>
+
+<style>
+body {
+  margin: 0;
+  background: black;
+}
+
+video {
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+}
+</style>
+
+</head>
+
+<body>
+
+<video id="player" autoplay muted playsinline></video>
+
+<script>
+
+var videos = [
+  "video1.mp4",
+  "video2.mp4",
+  "video3.mp4"
+];
+
+var i = 0;
+
+var player = document.getElementById("player");
+
+function playNext() {
+
+  player.src = videos[i];
+
+  player.load();
+
+  player.play();
+
+  i++;
+
+  if (i >= videos.length) {
+    i = 0;
+  }
+
+}
+
+player.onended = playNext;
+
+playNext();
+
+</script>
+
+</body>
+</html>
