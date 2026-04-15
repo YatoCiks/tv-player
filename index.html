@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Player TV</title>
+<title>TV Video Player</title>
 
 <style>
 body {
   margin: 0;
   background: black;
+  overflow: hidden;
 }
 
 video {
@@ -25,22 +26,29 @@ video {
 
 <script>
 
-var videos = [
-  "video1.mp4",
-  "video2.mp4",
-  "video3.mp4"
-];
+let videos = [];
+let i = 0;
 
-var i = 0;
+const player = document.getElementById("player");
 
-var player = document.getElementById("player");
+/* Carrega lista automaticamente do JSON */
+fetch("videos.json")
+.then(response => response.json())
+.then(data => {
+    videos = data.videos;
+    playNext();
+})
+.catch(err => {
+    console.error("Erro ao carregar videos.json:", err);
+});
 
+/* Função de reprodução sequencial */
 function playNext() {
 
+  if (!videos.length) return;
+
   player.src = videos[i];
-
   player.load();
-
   player.play();
 
   i++;
@@ -48,12 +56,10 @@ function playNext() {
   if (i >= videos.length) {
     i = 0;
   }
-
 }
 
+/* Quando o vídeo termina, vai para o próximo */
 player.onended = playNext;
-
-playNext();
 
 </script>
 
