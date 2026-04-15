@@ -22,7 +22,7 @@ video {
 
 <body>
 
-<video id="player" autoplay muted playsinline></video>
+<video id="player" autoplay playsinline></video>
 
 <script>
 
@@ -31,7 +31,7 @@ let i = 0;
 
 const player = document.getElementById("player");
 
-/* Carrega lista de vídeos */
+/* Carrega playlist */
 fetch("videos.json")
 .then(r => r.json())
 .then(data => {
@@ -44,39 +44,32 @@ fetch("videos.json")
 
 /* Reproduz vídeo atual */
 function playVideo() {
+
     if (!videos.length) return;
 
     player.src = videos[i];
     player.load();
 
-    const playPromise = player.play();
-    if (playPromise !== undefined) {
-        playPromise.catch(err => {
-            console.log("Autoplay bloqueado ou erro:", err);
-        });
-    }
+    player.play().catch(err => {
+        console.log("Erro autoplay:", err);
+    });
 }
 
-/* Avança corretamente ao fim do vídeo */
-player.addEventListener("ended", () => {
-    i++;
+/* Troca mais confiável que ended (TV-safe) */
+player.addEventListener("timeupdate", () => {
 
-    if (i >= videos.length) {
-        i = 0;
+    if (!player.duration) return;
+
+    if (player.currentTime >= player.duration - 0.25) {
+
+        i++;
+
+        if (i >= videos.length) {
+            i = 0;
+        }
+
+        playVideo();
     }
-
-    playVideo();
-});
-
-/* Libera áudio após qualquer interação (controle remoto/clique/toque) */
-document.addEventListener("click", () => {
-    player.muted = false;
-    player.play();
-});
-
-document.addEventListener("keydown", () => {
-    player.muted = false;
-    player.play();
 });
 
 </script>
