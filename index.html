@@ -8,22 +8,28 @@
 body {
   margin: 0;
   background: black;
+  overflow: hidden;
 }
 
 video,
 img,
 iframe {
+
+  position: absolute;
 
   width: 100vw;
   height: 100vh;
+
   object-fit: contain;
+
   border: none;
+
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
-video,
-img,
-iframe {
-  display: none;
+.active {
+  opacity: 1;
 }
 
 </style>
@@ -57,21 +63,23 @@ const image =
 const youtube =
   document.getElementById("youtubePlayer");
 
-/* tempo imagem */
+/* duração */
 
 const IMAGE_TIME = 10;
-
-/* tempo youtube (segundos) */
-
 const YOUTUBE_TIME = 30;
 
 /* carregar lista */
 
-fetch("videos.json")
-.then(r => r.json())
-.then(data => {
+Promise.all([
+  fetch("videos.json").then(r => r.json()),
+  fetch("extras.json").then(r => r.json())
+])
+.then(([videosData, extrasData]) => {
 
-  items = data.videos;
+  items = [
+    ...videosData.videos,
+    ...extrasData.extras
+  ];
 
   playItem();
 
@@ -80,24 +88,18 @@ fetch("videos.json")
 /* detectar tipos */
 
 function isImage(file) {
-
   return file.match(/\.(jpg|jpeg|png|webp)$/i);
-
 }
 
 function isVideo(file) {
-
   return file.match(/\.(mp4|webm)$/i);
-
 }
 
 function isYoutube(file) {
-
   return file.startsWith("youtube:");
-
 }
 
-/* extrair ID youtube */
+/* extrair id */
 
 function getYoutubeID(url) {
 
@@ -110,6 +112,16 @@ function getYoutubeID(url) {
 
 }
 
+/* limpar tela */
+
+function hideAll() {
+
+  video.classList.remove("active");
+  image.classList.remove("active");
+  youtube.classList.remove("active");
+
+}
+
 /* reprodução */
 
 function playItem() {
@@ -118,40 +130,40 @@ function playItem() {
 
   const file = items[i];
 
-  /* limpar tela */
-
-  video.style.display = "none";
-  image.style.display = "none";
-  youtube.style.display = "none";
-
-  /* vídeo local */
-
   if (isVideo(file)) {
-
-    video.style.display = "block";
 
     video.src = file;
 
-    video.play().catch(()=>{});
+    video.onloadeddata = () => {
+
+      hideAll();
+
+      video.classList.add("active");
+
+      video.play().catch(()=>{});
+
+    };
 
   }
-
-  /* imagem */
 
   else if (isImage(file)) {
 
-    image.style.display = "block";
-
     image.src = file;
 
-    setTimeout(
-      nextItem,
-      IMAGE_TIME * 1000
-    );
+    image.onload = () => {
+
+      hideAll();
+
+      image.classList.add("active");
+
+      setTimeout(
+        nextItem,
+        IMAGE_TIME * 1000
+      );
+
+    };
 
   }
-
-  /* youtube */
 
   else if (isYoutube(file)) {
 
@@ -166,17 +178,23 @@ function playItem() {
       return;
     }
 
-    youtube.style.display = "block";
-
     youtube.src =
       "https://www.youtube.com/embed/" +
       id +
       "?autoplay=1&mute=1";
 
-    setTimeout(
-      nextItem,
-      YOUTUBE_TIME * 1000
-    );
+    setTimeout(() => {
+
+      hideAll();
+
+      youtube.classList.add("active");
+
+      setTimeout(
+        nextItem,
+        YOUTUBE_TIME * 1000
+      );
+
+    }, 800);
 
   }
 
@@ -199,7 +217,7 @@ function nextItem() {
 
 }
 
-/* fim vídeo local */
+/* vídeo terminou */
 
 video.addEventListener(
   "ended",
