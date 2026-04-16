@@ -1,152 +1,140 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>TV Player</title>
 
 <style>
+
 body {
   margin: 0;
   background: black;
-  overflow: hidden;
 }
 
-video {
+video,
+img {
   width: 100vw;
   height: 100vh;
   object-fit: contain;
 }
+
+img {
+  display: none;
+}
+
+video {
+  display: none;
+}
+
 </style>
 
 </head>
 
 <body>
 
-<video id="player" playsinline preload="auto"></video>
+<video id="videoPlayer"
+       autoplay
+       playsinline
+       preload="auto"></video>
+
+<img id="imagePlayer">
 
 <script>
 
-let videos = [];
+let items = [];
 let i = 0;
 
-const player = document.getElementById("player");
+const video =
+  document.getElementById("videoPlayer");
 
-/* =========================
-   FULLSCREEN
-========================= */
-function requestFullscreen() {
-    const el = document.documentElement;
+const image =
+  document.getElementById("imagePlayer");
 
-    try {
-        if (el.requestFullscreen) el.requestFullscreen();
-        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    } catch (e) {}
-}
+/* tempo da imagem (segundos) */
 
-/* =========================
-   ÁUDIO (liberação por interação)
-========================= */
-function enableAudio() {
-    player.muted = false;
-}
+const IMAGE_TIME = 10;
 
-/* =========================
-   PLAYBACK
-========================= */
-function playVideo() {
+/* carregar lista */
 
-    if (!videos.length) return;
-
-    player.src = videos[i];
-    player.load();
-
-    attemptPlay();
-}
-
-/* Autoplay com múltiplas tentativas */
-function attemptPlay() {
-    const p = player.play();
-
-    if (p !== undefined) {
-        p.catch(() => {
-            // tenta novamente após pequena espera
-            setTimeout(() => {
-                player.play().catch(() => {});
-            }, 500);
-        });
-    }
-}
-
-/* =========================
-   CARREGAMENTO DA PLAYLIST
-========================= */
 fetch("videos.json")
 .then(r => r.json())
 .then(data => {
-    videos = data.videos;
-    playVideo();
-})
-.catch(err => console.error("Erro JSON:", err));
 
-/* =========================
-   TROCA DE VÍDEO (robusto para TV)
-========================= */
-player.addEventListener("timeupdate", () => {
+  items = data.videos;
 
-    if (!player.duration) return;
+  playItem();
 
-    if (player.currentTime >= player.duration - 0.25) {
-
-        i++;
-
-        if (i >= videos.length) {
-            i = 0;
-        }
-
-        playVideo();
-    }
 });
 
-/* =========================
-   MODO KIOSK (interação do usuário)
-========================= */
-function activateKioskMode() {
-    requestFullscreen();
-    enableAudio();
-    player.play().catch(() => {});
+/* detectar tipo */
+
+function isImage(file) {
+
+  return file.match(/\.(jpg|jpeg|png|webp)$/i);
+
 }
 
-/* Interação do controle remoto / clique */
-document.addEventListener("keydown", activateKioskMode);
-document.addEventListener("click", activateKioskMode);
+function isVideo(file) {
 
-/* =========================
-   AUTOPLAY INICIAL (tentativas)
-========================= */
-window.addEventListener("load", () => {
+  return file.match(/\.(mp4|webm)$/i);
 
-    requestFullscreen();
+}
 
-    // primeira tentativa
-    setTimeout(() => {
-        player.play().catch(() => {});
+/* reprodução */
 
-        // segunda tentativa (fallback)
-        setTimeout(() => {
-            player.play().catch(() => {});
-        }, 1000);
+function playItem() {
 
-    }, 500);
-});
+  if (!items.length) return;
 
-/* =========================
-   FALLBACK: se travar, reinicia fluxo
-========================= */
-setInterval(() => {
-    if (player.readyState === 0) {
-        playVideo();
-    }
-}, 5000);
+  const file = items[i];
+
+  if (isVideo(file)) {
+
+    image.style.display = "none";
+
+    video.style.display = "block";
+
+    video.src = file;
+
+    video.play().catch(()=>{});
+
+  }
+
+  else if (isImage(file)) {
+
+    video.pause();
+
+    video.style.display = "none";
+
+    image.style.display = "block";
+
+    image.src = file;
+
+    setTimeout(nextItem,
+      IMAGE_TIME * 1000);
+
+  }
+
+}
+
+/* próximo */
+
+function nextItem() {
+
+  i++;
+
+  if (i >= items.length)
+    i = 0;
+
+  playItem();
+
+}
+
+/* fim do vídeo */
+
+video.addEventListener(
+  "ended",
+  nextItem
+);
 
 </script>
 
