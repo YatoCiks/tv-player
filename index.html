@@ -8,28 +8,21 @@
 body {
   margin: 0;
   background: black;
-  overflow: hidden;
 }
 
 video,
-img,
-iframe {
-
-  position: absolute;
-
+img {
   width: 100vw;
   height: 100vh;
-
   object-fit: contain;
-
-  border: none;
-
-  opacity: 0;
-  transition: opacity 0.4s ease;
 }
 
-.active {
-  opacity: 1;
+img {
+  display: none;
+}
+
+video {
+  display: none;
 }
 
 </style>
@@ -45,10 +38,6 @@ iframe {
 
 <img id="imagePlayer">
 
-<iframe id="youtubePlayer"
-        allow="autoplay; fullscreen">
-</iframe>
-
 <script>
 
 let items = [];
@@ -60,65 +49,33 @@ const video =
 const image =
   document.getElementById("imagePlayer");
 
-const youtube =
-  document.getElementById("youtubePlayer");
-
-/* duração */
+/* tempo da imagem (segundos) */
 
 const IMAGE_TIME = 10;
-const YOUTUBE_TIME = 30;
 
 /* carregar lista */
 
-Promise.all([
-  fetch("videos.json").then(r => r.json()),
-  fetch("extras.json").then(r => r.json())
-])
-.then(([videosData, extrasData]) => {
+fetch("videos.json")
+.then(r => r.json())
+.then(data => {
 
-  items = [
-    ...videosData.videos,
-    ...extrasData.extras
-  ];
+  items = data.videos;
 
   playItem();
 
 });
 
-/* detectar tipos */
+/* detectar tipo */
 
 function isImage(file) {
+
   return file.match(/\.(jpg|jpeg|png|webp)$/i);
+
 }
 
 function isVideo(file) {
+
   return file.match(/\.(mp4|webm)$/i);
-}
-
-function isYoutube(file) {
-  return file.startsWith("youtube:");
-}
-
-/* extrair id */
-
-function getYoutubeID(url) {
-
-  const reg =
-    /(?:youtube\.com.*v=|youtu\.be\/)([^&]+)/;
-
-  const match = url.match(reg);
-
-  return match ? match[1] : null;
-
-}
-
-/* limpar tela */
-
-function hideAll() {
-
-  video.classList.remove("active");
-  image.classList.remove("active");
-  youtube.classList.remove("active");
 
 }
 
@@ -132,69 +89,28 @@ function playItem() {
 
   if (isVideo(file)) {
 
+    image.style.display = "none";
+
+    video.style.display = "block";
+
     video.src = file;
 
-    video.onloadeddata = () => {
-
-      hideAll();
-
-      video.classList.add("active");
-
-      video.play().catch(()=>{});
-
-    };
+    video.play().catch(()=>{});
 
   }
 
   else if (isImage(file)) {
 
+    video.pause();
+
+    video.style.display = "none";
+
+    image.style.display = "block";
+
     image.src = file;
 
-    image.onload = () => {
-
-      hideAll();
-
-      image.classList.add("active");
-
-      setTimeout(
-        nextItem,
-        IMAGE_TIME * 1000
-      );
-
-    };
-
-  }
-
-  else if (isYoutube(file)) {
-
-    const url =
-      file.replace("youtube:", "");
-
-    const id =
-      getYoutubeID(url);
-
-    if (!id) {
-      nextItem();
-      return;
-    }
-
-    youtube.src =
-      "https://www.youtube.com/embed/" +
-      id +
-      "?autoplay=1&mute=1";
-
-    setTimeout(() => {
-
-      hideAll();
-
-      youtube.classList.add("active");
-
-      setTimeout(
-        nextItem,
-        YOUTUBE_TIME * 1000
-      );
-
-    }, 800);
+    setTimeout(nextItem,
+      IMAGE_TIME * 1000);
 
   }
 
@@ -203,10 +119,6 @@ function playItem() {
 /* próximo */
 
 function nextItem() {
-
-  video.pause();
-
-  youtube.src = "";
 
   i++;
 
@@ -217,7 +129,7 @@ function nextItem() {
 
 }
 
-/* vídeo terminou */
+/* fim do vídeo */
 
 video.addEventListener(
   "ended",
