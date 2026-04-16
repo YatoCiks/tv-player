@@ -1,1 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
 
+<style>
+
+body {
+  margin: 0;
+  background: black;
+}
+
+video,
+img {
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain;
+}
+
+img {
+  display: none;
+}
+
+video {
+  display: none;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<video id="videoPlayer"
+       autoplay
+       playsinline
+       preload="auto"></video>
+
+<img id="imagePlayer">
+
+<script>
+
+let items = [];
+let i = 0;
+
+const video =
+  document.getElementById("videoPlayer");
+
+const image =
+  document.getElementById("imagePlayer");
+
+/* tempo da imagem (segundos) */
+
+const IMAGE_TIME = 10;
+
+/* carregar lista */
+
+fetch("videos.json")
+.then(r => r.json())
+.then(data => {
+
+  items = data.videos;
+
+  playItem();
+
+});
+
+/* detectar tipo */
+
+function isImage(file) {
+
+  return file.match(/\.(jpg|jpeg|png|webp)$/i);
+
+}
+
+function isVideo(file) {
+
+  return file.match(/\.(mp4|webm)$/i);
+
+}
+
+/* reprodução */
+
+function playItem() {
+
+  if (!items.length) return;
+
+  const file = items[i];
+
+  if (isVideo(file)) {
+
+    image.style.display = "none";
+
+    video.style.display = "block";
+
+    video.src = file;
+
+    video.play().catch(()=>{});
+
+  }
+
+  else if (isImage(file)) {
+
+    video.pause();
+
+    video.style.display = "none";
+
+    image.style.display = "block";
+
+    image.src = file;
+
+    setTimeout(nextItem,
+      IMAGE_TIME * 1000);
+
+  }
+
+}
+
+/* próximo */
+
+function nextItem() {
+
+  i++;
+
+  if (i >= items.length)
+    i = 0;
+
+  playItem();
+
+}
+
+/* fim do vídeo */
+
+video.addEventListener(
+  "ended",
+  nextItem
+);
+
+</script>
+
+</body>
+</html>
