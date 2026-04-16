@@ -1,39 +1,57 @@
-name: Update Video List
+name: Update videos.json
 
 on:
   push:
     paths:
-      - 'videos/*.mp4'
-
-permissions:
-  contents: write
+      - 'videos/**'
 
 jobs:
-  build:
+  update-json:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
 
-      - name: Generate videos.json
-        run: |
-          echo '{ "videos": [' > videos.json
-          first=true
-          for f in videos/*.mp4; do
-            if [ "$first" = true ]; then
-              echo "\"$f\"" >> videos.json
-              first=false
-            else
-              echo ",\"$f\"" >> videos.json
-            fi
-          done
-          echo '] }' >> videos.json
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Commit changes
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git add videos.json
-          git commit -m "Update video list" || exit 0
-          git push
+    - name: Generate videos.json
+      run: |
+
+        echo '{ "videos": [' > videos.json
+
+        first=true
+
+        for file in $(find videos \
+          -type f \
+          \( \
+          -iname "*.mp4" \
+          -o -iname "*.webm" \
+          -o -iname "*.jpg" \
+          -o -iname "*.jpeg" \
+          -o -iname "*.png" \
+          -o -iname "*.webp" \
+          \) \
+          | sort); do
+
+          if [ "$first" = true ]; then
+            first=false
+          else
+            echo ',' >> videos.json
+          fi
+
+          echo "\"$file\"" >> videos.json
+
+        done
+
+        echo ']}' >> videos.json
+
+    - name: Commit videos.json
+      run: |
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+
+        git add videos.json
+
+        git diff --cached --quiet || git commit -m "Update videos.json"
+
+        git push
