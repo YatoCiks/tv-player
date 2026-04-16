@@ -11,17 +11,18 @@ body {
 }
 
 video,
-img {
+img,
+iframe {
+
   width: 100vw;
   height: 100vh;
   object-fit: contain;
+  border: none;
 }
 
-img {
-  display: none;
-}
-
-video {
+video,
+img,
+iframe {
   display: none;
 }
 
@@ -38,6 +39,10 @@ video {
 
 <img id="imagePlayer">
 
+<iframe id="youtubePlayer"
+        allow="autoplay; fullscreen">
+</iframe>
+
 <script>
 
 let items = [];
@@ -49,9 +54,16 @@ const video =
 const image =
   document.getElementById("imagePlayer");
 
-/* tempo da imagem (segundos) */
+const youtube =
+  document.getElementById("youtubePlayer");
+
+/* tempo imagem */
 
 const IMAGE_TIME = 10;
+
+/* tempo youtube (segundos) */
+
+const YOUTUBE_TIME = 30;
 
 /* carregar lista */
 
@@ -65,7 +77,7 @@ fetch("videos.json")
 
 });
 
-/* detectar tipo */
+/* detectar tipos */
 
 function isImage(file) {
 
@@ -79,6 +91,25 @@ function isVideo(file) {
 
 }
 
+function isYoutube(file) {
+
+  return file.startsWith("youtube:");
+
+}
+
+/* extrair ID youtube */
+
+function getYoutubeID(url) {
+
+  const reg =
+    /(?:youtube\.com.*v=|youtu\.be\/)([^&]+)/;
+
+  const match = url.match(reg);
+
+  return match ? match[1] : null;
+
+}
+
 /* reprodução */
 
 function playItem() {
@@ -87,9 +118,15 @@ function playItem() {
 
   const file = items[i];
 
-  if (isVideo(file)) {
+  /* limpar tela */
 
-    image.style.display = "none";
+  video.style.display = "none";
+  image.style.display = "none";
+  youtube.style.display = "none";
+
+  /* vídeo local */
+
+  if (isVideo(file)) {
 
     video.style.display = "block";
 
@@ -99,18 +136,47 @@ function playItem() {
 
   }
 
+  /* imagem */
+
   else if (isImage(file)) {
-
-    video.pause();
-
-    video.style.display = "none";
 
     image.style.display = "block";
 
     image.src = file;
 
-    setTimeout(nextItem,
-      IMAGE_TIME * 1000);
+    setTimeout(
+      nextItem,
+      IMAGE_TIME * 1000
+    );
+
+  }
+
+  /* youtube */
+
+  else if (isYoutube(file)) {
+
+    const url =
+      file.replace("youtube:", "");
+
+    const id =
+      getYoutubeID(url);
+
+    if (!id) {
+      nextItem();
+      return;
+    }
+
+    youtube.style.display = "block";
+
+    youtube.src =
+      "https://www.youtube.com/embed/" +
+      id +
+      "?autoplay=1&mute=1";
+
+    setTimeout(
+      nextItem,
+      YOUTUBE_TIME * 1000
+    );
 
   }
 
@@ -119,6 +185,10 @@ function playItem() {
 /* próximo */
 
 function nextItem() {
+
+  video.pause();
+
+  youtube.src = "";
 
   i++;
 
@@ -129,7 +199,7 @@ function nextItem() {
 
 }
 
-/* fim do vídeo */
+/* fim vídeo local */
 
 video.addEventListener(
   "ended",
